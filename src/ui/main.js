@@ -16,7 +16,7 @@ function search() {
 	const query = get_query();
 	if(!query.length) return;
 
-	location.search = `e=${get_engine()}&q=${query}`;
+	location.assign(`/?e=${get_engine()}&q=${query}`);
 }
 
 

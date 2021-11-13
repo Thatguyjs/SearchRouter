@@ -1,5 +1,6 @@
 const parse_engines = require("./parse_engine.js");
 const parse_query = require('./query.js');
+const send_request = require('./request.js');
 
 const http = require("http");
 const pfs = require('fs/promises');
@@ -16,12 +17,21 @@ const mime = {
 	'mjs': 'application/javascript'
 };
 
+let users = {}; // Keeps track of what search engines are being used
+
 
 function request(req, res) {
 	if(req.method === 'GET') {
 		if(req.url.startsWith('/?'))
-			parse_query(engines, req.url, res);
-		else {
+			users[req.socket.remoteAddress] = parse_query(engines, req.url, res);
+		else if(req.url === '/') {
+			res.writeHead(302, { 'Location': '/~/' });
+			res.end();
+		}
+		else if(req.url.startsWith('/~/')) {
+			delete users[req.socket.remoteAddress];
+			req.url = req.url.slice(2);
+
 			if(!req.url.includes('.')) {
 				if(req.url.endsWith('/')) req.url += 'index.html';
 				else req.url += '/index.html';
@@ -40,6 +50,18 @@ function request(req, res) {
 					res.writeHead(404);
 					res.end("404 Not Found");
 				});
+		}
+		else {
+			const user = users[req.socket.remoteAddress];
+
+			if(!user) {
+				res.writeHead(302, { 'Location': '/~/' });
+				res.end();
+			}
+			else {
+				let include_www = engines[user].optional_www;
+				send_request(user, `https://${include_www ? 'www.' : ''}${user}${req.url}`, res);
+			}
 		}
 	}
 	else {

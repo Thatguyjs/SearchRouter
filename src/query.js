@@ -1,5 +1,6 @@
 // Parse and respond to a query
 
+const send_request = require('./request.js');
 const https = require('https');
 
 
@@ -62,8 +63,7 @@ module.exports = function(engines, url, res) {
 	}
 
 	const query_str = build_query(engine, params.q);
+	send_request(params.e, query_str, res);
 
-	https.get(query_str, (q_res) => {
-		// TODO
-	});
+	return params.e;
 }
